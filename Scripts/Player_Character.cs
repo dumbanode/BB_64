@@ -40,16 +40,18 @@ public class Player_Character : KinematicBody
 
     public void MoveCharacter(float delta)
     {
-        // get the direction of where the camera is pointing
-        var h_rotation = GetNode<Spatial>("Camroot").GetNode<Spatial>("h").GlobalTransform.basis.GetEuler().y;
-
-        // get the direction of the character
-        var x = Input.GetActionStrength("left") - Input.GetActionStrength("right");
-        var z = Input.GetActionStrength("forward") - Input.GetActionStrength("backward");
-        Direction = new Vector3(x,0,z).Rotated(Vector3.Up, h_rotation).Normalized();
-
-        // Is the player walking or running?
+    
+        var h_rotation = (float) 0;
         if (Input.IsActionPressed("forward") || Input.IsActionPressed("backward") || Input.IsActionPressed("left") || Input.IsActionPressed("right")){
+            // get the direction of where the camera is pointing
+            h_rotation = GetNode<Spatial>("Camroot").GetNode<Spatial>("h").GlobalTransform.basis.GetEuler().y;
+
+            // get the direction of the character
+            var x = Input.GetActionStrength("left") - Input.GetActionStrength("right");
+            var z = Input.GetActionStrength("forward") - Input.GetActionStrength("backward");
+            Direction = new Vector3(x,0,z).Rotated(Vector3.Up, h_rotation).Normalized();
+
+            // Is the player walking or running?
             if (Input.IsActionPressed("sprint")){
                 MovementSpeed = RunSpeed;
             }
