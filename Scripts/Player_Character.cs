@@ -13,6 +13,9 @@ public class Player_Character : KinematicBody
     private float WalkSpeed = (float) 1.5;
     private float RunSpeed = (float) 5;
     private float Acceleration = (float) 6;
+    private float AngularAcceleration = (float) 7;
+
+    private int DebugPrintLoop = 0;
 
 
     public override void _Ready()
@@ -27,6 +30,11 @@ public class Player_Character : KinematicBody
 
     public override void _Process(float delta)
     {
+        DebugPrintLoop++;
+        if (DebugPrintLoop == 101){
+            DebugPrintLoop = 0;
+        }
+
         MoveCharacter(delta);
     }
 
@@ -34,7 +42,6 @@ public class Player_Character : KinematicBody
     {
         // get the direction of where the camera is pointing
         var h_rotation = GetNode<Spatial>("Camroot").GetNode<Spatial>("h").GlobalTransform.basis.GetEuler().y;
-        GD.Print("h_rot is: ", h_rotation);
 
         // get the direction of the character
         var x = Input.GetActionStrength("left") - Input.GetActionStrength("right");
@@ -67,7 +74,23 @@ public class Player_Character : KinematicBody
         var VelY = Mathf.Lerp(Velocity.y, DirMoveSpeed.y, delta * Acceleration);
         var VelZ = Mathf.Lerp(Velocity.z, DirMoveSpeed.z, delta * Acceleration);
         Velocity = new Vector3(VelX, VelY, VelZ);
+
+        // make the player face towards where the camera is pointing
+        var meshRotation = Mathf.LerpAngle(GetNode<Spatial>("Mesh").Rotation.y, Mathf.Atan2(Direction.x, Direction.z), delta * AngularAcceleration);
+        GetNode<Spatial>("Mesh").Rotation = new Vector3(0, meshRotation, 0);
+        DebugPrint("H Rotation is: ", h_rotation);
+        DebugPrint("MeshRotation is: ", meshRotation);
+        //GD.Print("MeshRotation is: ", meshRotation);
+
+        // Move and Slide that bad boy
         MoveAndSlide(Velocity + Vector3.Down * VerticalVelocity, Vector3.Up);
 
+    }
+
+    private void DebugPrint(string Message, object VariableToPrint)
+    {
+        if (DebugPrintLoop == 100){
+            GD.Print(Message, VariableToPrint);
+        }
     }
 }
