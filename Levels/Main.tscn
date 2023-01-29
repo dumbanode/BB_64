@@ -50,7 +50,7 @@ transform = Transform( 0.900463, 0, -0.434933, 0, 0.537483, 0, 0.434933, 0, 0.90
 shape = SubResource( 4 )
 
 [node name="MeshInstance" type="MeshInstance" parent="StaticBody"]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00403881, -5.96046e-08, -0.00707471 )
+transform = Transform( 1, 0, 2.98023e-08, 0, 1, 0, -2.98023e-08, 0, 1, 0.00403881, -5.96046e-08, -0.00707471 )
 mesh = SubResource( 5 )
 
 [node name="losPollos" parent="." instance=ExtResource( 3 )]

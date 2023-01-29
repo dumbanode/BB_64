@@ -48,6 +48,6 @@ public class Camera : Spatial
         var camroot_h_lerp = Mathf.Lerp(CurrRotationY, camroot_h, delta * h_acceleration);
         var camroot_v_lerp = Mathf.Lerp(CurrRotationX, camroot_v, delta * v_acceleration);
         GetNode<Spatial>("h").RotationDegrees = new Vector3((float) 0, camroot_h_lerp, (float) 0);
-        GetNode<Spatial>("h").GetNode<Spatial>("v").RotationDegrees = new Vector3(camroot_v_lerp, (float) 0, (float) 0);
+        GetNode<Spatial>("h/v").RotationDegrees = new Vector3(camroot_v_lerp, (float) 0, (float) 0);
     }
 }
