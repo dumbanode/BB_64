@@ -17,6 +17,8 @@ public class Player_Character : KinematicBody
     private float Acceleration = (float) 6;
     private float AngularAcceleration = (float) 7;
 
+    private float AimTurn = (float) 0;
+
     private int DebugPrintLoop = 0;
 
 
@@ -27,7 +29,10 @@ public class Player_Character : KinematicBody
 
     public override void _Input(InputEvent @event)
     {
-
+        // gradually turn when the player moves the mouse
+        if (@event is InputEventMouseMotion eventMouseMotion){
+            AimTurn = -eventMouseMotion.Relative.x * (float) 0.015;
+        }
     }
 
     public override void _Process(float delta)
@@ -37,11 +42,13 @@ public class Player_Character : KinematicBody
             DebugPrintLoop = 0;
         }
 
+        // Set the state we are currently in
+        // Eg: Aiming / Not Aiming
+        SetState();
         MoveCharacter(delta);
     }
 
-    public void MoveCharacter(float delta)
-    {
+    public void SetState(){
         // if aim is clicked, switch into the aiming state, else go to not_aiming state
         if (Input.IsActionPressed("aim")){
             GetNode<AnimationTree>("AnimationTree").Set("parameters/aim_transition/current", 0);
@@ -49,37 +56,55 @@ public class Player_Character : KinematicBody
         else {
             GetNode<AnimationTree>("AnimationTree").Set("parameters/aim_transition/current", 1);
         }
-    
+    }
 
-        var h_rotation = (float) 0;
+    public void MoveCharacter(float delta)
+    {
+    
         // get the direction of where the camera is pointing
-        h_rotation = GetNode<Spatial>("Camroot").GetNode<Spatial>("h").GlobalTransform.basis.GetEuler().y;
-        DebugPrint("H Rotation 1: ", h_rotation);
+        var hRotation = GetNode<Spatial>("Camroot/h").GlobalTransform.basis.GetEuler().y;
+        
+        // If the movement keys have been pressed, move the character accordingly
         if (Input.IsActionPressed("forward") || Input.IsActionPressed("backward") || Input.IsActionPressed("left") || Input.IsActionPressed("right")){
 
-            // get the direction of the character
+            // update the direction of where the character should be facing
             var x = Input.GetActionStrength("left") - Input.GetActionStrength("right");
             var z = Input.GetActionStrength("forward") - Input.GetActionStrength("backward");
-            //Direction = new Vector3(x,0,z).Rotated(Vector3.Up, h_rotation).Normalized();
-            Direction = new Vector3(x,0,z).Rotated(Vector3.Up, h_rotation);
+            // rotate the direction based on where the camera is pointing
+            Direction = new Vector3(x,0,z).Rotated(Vector3.Up, hRotation);
 
+            // what direction should the strafe go?
             StrafeDir = Direction;
 
+            // scale the direction into a unit vector
             Direction = Direction.Normalized();
 
             // Is the player walking or running?
             // If the sprint button is pressed AND if the current state is not_aiming
             // (We do not want to run if we're aiming)
             if (Input.IsActionPressed("sprint") && (int) GetNode<AnimationTree>("AnimationTree").Get("parameters/aim_transition/current") == 1){
+                // set the movement speed accordingly
                 MovementSpeed = RunSpeed;
+                // Smoothly transition from the player's current animation to the walk run animation
+                // 1 - Run, 0 - Walk, -1 - Idle
+                GetNode<AnimationTree>("AnimationTree").Set("parameters/IWRBlend/blend_amount", Mathf.Lerp((float)GetNode<AnimationTree>("AnimationTree").Get("parameters/IWRBlend/blend_amount"), 1, delta * Acceleration));
             }
             else {
+                // Set the movement speed to walking speed and smoothly transition the current animation to the walk animation 
                 MovementSpeed = WalkSpeed;
+                GetNode<AnimationTree>("AnimationTree").Set("parameters/IWRBlend/blend_amount", Mathf.Lerp((float)GetNode<AnimationTree>("AnimationTree").Get("parameters/IWRBlend/blend_amount"), 0, delta * Acceleration));
             }
         }
         else {
+            // Set the movement speed to zero and smoothly transition to the idle animation
             MovementSpeed = 0;
             StrafeDir = Vector3.Zero;
+            GetNode<AnimationTree>("AnimationTree").Set("parameters/IWRBlend/blend_amount", Mathf.Lerp((float)GetNode<AnimationTree>("AnimationTree").Get("parameters/IWRBlend/blend_amount"), -1, delta * Acceleration));
+
+            // If we are currently aiming, update the the direction vector to where the camera is pointing
+            if ((int) GetNode<AnimationTree>("AnimationTree").Get("parameters/aim_transition/current") == 0){
+                Direction = GetNode<Spatial>("Camroot/h").GlobalTransform.basis.z;
+            }
         }
 
         // apply vertical velocity if not on floor
@@ -90,40 +115,40 @@ public class Player_Character : KinematicBody
             VerticalVelocity = 0;
         }
 
-        // apply the velocity
+        // calculate the velocity
         var DirMoveSpeed = Direction * MovementSpeed;
         var VelX = Mathf.Lerp(Velocity.x, DirMoveSpeed.x, delta * Acceleration);
         var VelY = Mathf.Lerp(Velocity.y, DirMoveSpeed.y, delta * Acceleration);
         var VelZ = Mathf.Lerp(Velocity.z, DirMoveSpeed.z, delta * Acceleration);
         Velocity = new Vector3(VelX, VelY, VelZ);
 
-        // if we are NOT aiming
+
+        // if we are NOT aiming, aim the player mesh towards where the last keys were pushed
         if ((int)GetNode<AnimationTree>("AnimationTree").Get("parameters/aim_transition/current") == 1){
-            // aim the player towards what keys are pressed
             var meshRotation = Mathf.LerpAngle(GetNode<Spatial>("Mesh").Rotation.y, Mathf.Atan2(Direction.x, Direction.z), delta * AngularAcceleration);
             GetNode<Spatial>("Mesh").Rotation = new Vector3(0, meshRotation, 0);
         }
-        // if we are aiming
+        // if we are aiming, aim the player towards where the camera is pointing
         else {
-            // aim the player towards where the camera is pointing
-            var meshRotation = Mathf.LerpAngle(GetNode<Spatial>("Mesh").Rotation.y, h_rotation, delta * AngularAcceleration);
-            DebugPrint("Mesh Rotation: ", meshRotation);
-            DebugPrint("H Rotation 2: ", h_rotation);
+            var meshRotation = Mathf.LerpAngle(GetNode<Spatial>("Mesh").Rotation.y, hRotation, delta * AngularAcceleration);
             GetNode<Spatial>("Mesh").Rotation = new Vector3(0, meshRotation, 0);
         }
 
+
         // Lerp the strafe and update the strafe animation
-        var strafeX = Mathf.Lerp(Strafe.x, StrafeDir.x, delta * Acceleration);
+        var strafeX = Mathf.Lerp(Strafe.x, StrafeDir.x + 1 * AimTurn, delta * Acceleration);
         var strafeY = Mathf.Lerp(Strafe.y, StrafeDir.y, delta * Acceleration);
         var strafeZ = Mathf.Lerp(Strafe.z, StrafeDir.z, delta * Acceleration);
         Strafe = new Vector3(strafeX, strafeY, strafeZ);
 
+        // Update where on the blend position graph the animation will sit
         GetNode<AnimationTree>("AnimationTree").Set("parameters/Strafe/blend_position", new Vector2(-Strafe.x, Strafe.z));
-
-        var currBlend = GetNode<AnimationTree>("AnimationTree").Get("parameters/Strafe/blend_position");
 
         // Move and Slide that bad boy
         MoveAndSlide(Velocity + Vector3.Down * VerticalVelocity, Vector3.Up);
+
+        // Reset the aim turn
+        AimTurn = 0;
 
     }
 

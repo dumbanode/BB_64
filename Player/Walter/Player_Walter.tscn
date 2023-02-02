@@ -82,11 +82,11 @@ input_1/name = "not_aiming"
 input_1/auto_advance = false
 
 [sub_resource type="AnimationNodeBlendTree" id=8]
-graph_offset = Vector2( -461.465, 129.12 )
+graph_offset = Vector2( -451.822, 277.08 )
 nodes/IWRBlend/node = SubResource( 15 )
 nodes/IWRBlend/position = Vector2( 443.329, 403.079 )
 nodes/Idle/node = SubResource( 16 )
-nodes/Idle/position = Vector2( 80, 340 )
+nodes/Idle/position = Vector2( -200, 340 )
 nodes/Roll/node = SubResource( 21 )
 nodes/Roll/position = Vector2( 880, 220 )
 nodes/RunScale/node = SubResource( 17 )
@@ -123,7 +123,7 @@ anims/Walterwalt-walking-loop = ExtResource( 6 )
 tree_root = SubResource( 8 )
 anim_player = NodePath("../AnimationPlayer")
 active = true
-parameters/IWRBlend/blend_amount = 0.0
+parameters/IWRBlend/blend_amount = -1.0
 parameters/Roll/active = false
 parameters/RunScale/scale = 1.0
 parameters/Strafe/blend_position = Vector2( -0.00105155, -0.00467288 )
